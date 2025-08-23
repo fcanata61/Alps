@@ -1,0 +1,192 @@
+ALPS – Tutorial Completo de Instalação, Configuração e Uso
+
+====================================================================
+1️⃣ Preparação do ambiente
+====================================================================
+
+1. Crie um diretório para o ALPS e entre nele:
+mkdir -p $HOME/alps
+cd $HOME/alps
+
+2. Copie os módulos do ALPS para dentro deste diretório:
+alps/
+├─ config.sh
+├─ utils.sh
+├─ download_unpack_patch.sh
+├─ build_install.sh
+├─ deps_search_info.sh
+└─ hooks_git_help.sh
+
+3. Crie o script principal alps.sh no mesmo diretório (como na Parte 7 que fizemos) e torne-o executável:
+chmod +x alps.sh
+
+====================================================================
+2️⃣ Configuração do ALPS via .alps_profile
+====================================================================
+
+Crie o arquivo no seu home:
+nano ~/.alps_profile
+
+Cole o conteúdo abaixo:
+
+# ~/.alps_profile
+# Configurações globais para ALPS (Advanced Linux Package Source Builder)
+
+########################################
+# Diretórios
+########################################
+WORKDIR="$HOME/build"              # Diretório de trabalho para baixar e compilar pacotes
+DESTDIR="/tmp/alps-install"        # Diretório para instalação temporária
+INSTALLDIR="/usr/local"            # Diretório final de instalação
+LOG_DIR="$HOME/alps-logs"          # Diretório para logs do ALPS
+
+########################################
+# Comportamento
+########################################
+TOOCHAIN_BUILD=0        # 1 = apenas construir toolchain (ignora logs/git)
+ENABLE_COLOR=1          # 1 = mensagens coloridas, 0 = sem cor
+ENABLE_SPINNER=1        # 1 = spinner em operações longas, 0 = desliga
+CHECK_DEPS_ONLY=0       # 1 = apenas checa dependências
+BUILD_ONLY=0            # 1 = build sem instalar
+
+########################################
+# Segurança
+########################################
+SHA256_KEY="minha_chave_ativa"  # Chave para verificação de pacotes
+
+########################################
+# Git
+########################################
+GIT_REPO="$HOME/linux-system"  # Repositório para versionamento do sistema
+
+########################################
+# Pacotes e Dependências
+########################################
+declare -A DEP_DB
+DEP_DB[hello]=""
+DEP_DB[coreutils]=""
+DEP_DB[glibc]=""
+DEP_DB[binutils]=""
+DEP_DB[gcc]="binutils glibc"
+DEP_DB[make]="gcc"
+DEP_DB[linux-kernel]="gcc make"
+
+declare -A DEP_DB_URL
+DEP_DB_URL[hello]="https://ftp.gnu.org/gnu/hello/hello-2.12.tar.gz"
+DEP_DB_URL[coreutils]="https://ftp.gnu.org/gnu/coreutils/coreutils-9.2.tar.xz"
+DEP_DB_URL[glibc]="https://ftp.gnu.org/gnu/libc/glibc-2.39.tar.xz"
+DEP_DB_URL[binutils]="https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz"
+DEP_DB_URL[gcc]="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
+DEP_DB_URL[make]="https://ftp.gnu.org/gnu/make/make-4.4.tar.gz"
+DEP_DB_URL[linux-kernel]="https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.6.tar.xz"
+
+########################################
+# Variáveis adicionais
+########################################
+ALPS_MAKE_THREADS=$(nproc)
+ALPS_LOG_LEVEL="INFO"
+ALPS_HOOKS_ENABLED=1  # 1 = permite hooks, 0 = desativa hooks globalmente
+
+====================================================================
+3️⃣ Estrutura de diretórios de pacotes
+====================================================================
+
+Exemplo do pacote hello:
+
+$WORKDIR/hello/
+├─ build.sh
+├─ hooks/
+│   ├─ pre-build/
+│   │   └─ hook1.sh
+│   └─ post-build/
+│       └─ hook1.sh
+
+Exemplo de build.sh:
+#!/bin/bash
+set -e
+PREFIX="${DESTDIR:-/usr/local}"
+./configure --prefix="$PREFIX"
+make
+make install DESTDIR="$PREFIX"
+
+Exemplo de hook pre-build/hook1.sh:
+#!/bin/bash
+echo "Hook pre-build: preparando ambiente para o pacote hello"
+
+Exemplo de hook post-build/hook1.sh:
+#!/bin/bash
+echo "Hook post-build: compilação concluída para o pacote hello"
+
+Torne todos os scripts executáveis:
+chmod +x build.sh
+chmod +x hooks/pre-build/hook1.sh
+chmod +x hooks/post-build/hook1.sh
+
+====================================================================
+4️⃣ Comandos principais do ALPS
+====================================================================
+
+./alps.sh build <pkg> <url>       - Baixa, descompacta, patch, compila e instala
+./alps.sh build-only <pkg> <url>  - Compila sem instalar
+./alps.sh check-deps <pkg>        - Verifica dependências recursivamente
+./alps.sh search <termo>          - Busca pacotes disponíveis
+./alps.sh info <pkg>              - Informações do pacote
+./alps.sh remove <pkg>            - Remove pacote (destdir-aware)
+./alps.sh world-rebuild           - Recompila todo o sistema
+./alps.sh help                     - Mostra o help completo
+
+====================================================================
+5️⃣ Fluxo típico de instalação de um pacote
+====================================================================
+
+1. Certifique-se de ter a variável WORKDIR criada e limpa:
+mkdir -p $WORKDIR
+
+2. Execute o build de um pacote:
+./alps.sh build hello https://ftp.gnu.org/gnu/hello/hello-2.12.tar.gz
+
+3. Para build-only:
+./alps.sh build-only hello https://ftp.gnu.org/gnu/hello/hello-2.12.tar.gz
+
+4. Verificar dependências:
+./alps.sh check-deps hello
+
+5. Consultar informações do pacote:
+./alps.sh info hello
+
+6. Buscar pacotes:
+./alps.sh search hello
+
+7. Remover pacote:
+./alps.sh remove hello
+
+8. Recompilar todo o sistema (world rebuild):
+./alps.sh world-rebuild
+
+====================================================================
+6️⃣ Uso de toolchain mode (TOOCHAIN_BUILD)
+====================================================================
+
+1. Ative toolchain mode no ~/.alps_profile:
+TOOCHAIN_BUILD=1
+
+2. Executar build de toolchain:
+./alps.sh build gcc https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz
+
+- Logs e git sync serão ignorados
+- Apenas compila e instala no DESTDIR configurado
+
+====================================================================
+7️⃣ Dicas finais
+====================================================================
+
+- Sempre use DESTDIR para builds temporários/testes antes de instalar globalmente
+- Hooks permitem customizar pré e pós build/install
+- Variáveis como ALPS_MAKE_THREADS ajudam a acelerar builds
+- Mantenha seu GIT_REPO atualizado para rastrear mudanças
+- Todos os pacotes devem ter build.sh e hooks opcionais para integração completa
+- Para novos pacotes, adicione DEP_DB e DEP_DB_URL no .alps_profile
+
+====================================================================
+Fim do Tutorial
+====================================================================
