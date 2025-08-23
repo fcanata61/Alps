@@ -170,11 +170,44 @@ mkdir -p $WORKDIR
 1. Ative toolchain mode no ~/.alps_profile:
 TOOCHAIN_BUILD=1
 
-2. Executar build de toolchain:
-./alps.sh build gcc https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz
+2. Configure diretórios específicos para toolchain:
+WORKDIR="$HOME/build-toolchain"
+DESTDIR="$HOME/toolchain"
+INSTALLDIR="$DESTDIR/usr"
+LOG_DIR="$HOME/alps-toolchain-logs"
+
+3. Defina os pacotes essenciais do toolchain no .alps_profile:
+declare -A DEP_DB
+DEP_DB[binutils]=""
+DEP_DB[gcc]="binutils glibc"
+DEP_DB[glibc]=""
+DEP_DB[make]="gcc"
+
+E URLs correspondentes:
+declare -A DEP_DB_URL
+DEP_DB_URL[binutils]="https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz"
+DEP_DB_URL[gcc]="https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"
+DEP_DB_URL[glibc]="https://ftp.gnu.org/gnu/libc/glibc-2.39.tar.xz"
+DEP_DB_URL[make]="https://ftp.gnu.org/gnu/make/make-4.4.tar.gz"
+
+4. Executando builds do toolchain:
+./alps.sh build binutils $DEP_DB_URL[binutils]
+./alps.sh build gcc $DEP_DB_URL[gcc]
+./alps.sh build glibc $DEP_DB_URL[glibc]
+./alps.sh build make $DEP_DB_URL[make]
 
 - Logs e git sync serão ignorados
-- Apenas compila e instala no DESTDIR configurado
+- O toolchain será instalado isoladamente no DESTDIR
+
+5. Dicas:
+- Limpe WORKDIR antes de reconstruir toolchain:
+  rm -rf $WORKDIR/*
+- Use BUILD_ONLY=1 se quiser apenas compilar sem instalar:
+  BUILD_ONLY=1 ./alps.sh build gcc $DEP_DB_URL[gcc]
+- Use hooks para configurar flags específicas do LFS:
+  $WORKDIR/binutils/hooks/pre-build/set-flags.sh
+- Utilize ALPS_MAKE_THREADS para acelerar compilação:
+  ALPS_MAKE_THREADS=$(nproc)
 
 ====================================================================
 7️⃣ Dicas finais
@@ -182,10 +215,10 @@ TOOCHAIN_BUILD=1
 
 - Sempre use DESTDIR para builds temporários/testes antes de instalar globalmente
 - Hooks permitem customizar pré e pós build/install
-- Variáveis como ALPS_MAKE_THREADS ajudam a acelerar builds
 - Mantenha seu GIT_REPO atualizado para rastrear mudanças
 - Todos os pacotes devem ter build.sh e hooks opcionais para integração completa
 - Para novos pacotes, adicione DEP_DB e DEP_DB_URL no .alps_profile
+- Toolchain mode garante builds isolados, limpos e seguros para LFS
 
 ====================================================================
 Fim do Tutorial
