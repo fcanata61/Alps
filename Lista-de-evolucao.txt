@@ -1,0 +1,55 @@
+Alps - Evolução do Bootstrap Automático
+======================================
+
+Objetivo: automatizar a construção do toolchain e do sistema base
+com um único comando: `alps bootstrap`.
+
+------------------------------------------------------------
+1. Preparação do ambiente
+- Verificar se o host possui ferramentas básicas: gcc, make, tar, wget.
+- Criar diretórios de trabalho:
+  - $ALPS_BUILD  (build temporário)
+  - $ALPS_CACHE  (sources)
+  - $ALPS_TOOLCHAIN  (toolchain temporário)
+  - $ALPS_LOGS  (logs de compilação)
+
+------------------------------------------------------------
+2. Toolchain Init (fase 1)
+- Baixar e compilar binutils e gcc (cross).
+- Instalar no $ALPS_TOOLCHAIN.
+- Exportar PATH para usar o toolchain novo.
+
+------------------------------------------------------------
+3. Toolchain Base
+- Compilar glibc/musl, libstdc++, headers do kernel.
+- Atualizar PATH para usar apenas ferramentas do $ALPS_TOOLCHAIN/bin.
+
+------------------------------------------------------------
+4. Toolchain Final (fase 2)
+- Recompilar gcc e binutils agora linkados contra a libc final.
+- Reinstalar no $ALPS_TOOLCHAIN.
+- Validar independência do host (ldd não deve apontar libs externas).
+
+------------------------------------------------------------
+5. Base System
+- Compilar pacotes essenciais: coreutils, bash, grep, sed, make, tar, gzip, xz.
+- Instalar usando o Alps normalmente.
+
+------------------------------------------------------------
+6. Registro e Logs
+- Cada etapa gera um log em $ALPS_LOGS/<pkg>.log.
+- Registrar no banco de dados interno do Alps os pacotes bootstrapados.
+
+------------------------------------------------------------
+7. Finalização
+- Gerar manifesto de todos os pacotes base.
+- Criar arquivo bootstrap.done para marcar o bootstrap completo.
+- Exibir mensagem:
+  '✅ Bootstrap concluído! Agora você pode usar o Alps normalmente.'
+
+------------------------------------------------------------
+Evoluções futuras:
+- Resume: retomar do ponto de falha sem recompilar tudo.
+- Paralelização: make -j$(nproc).
+- Configuração: escolher libc (musl ou glibc) com --libc=.
+- Cross-bootstrap: permitir gerar sistemas para outra arquitetura.
