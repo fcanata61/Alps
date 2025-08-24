@@ -1,0 +1,80 @@
+Alps - Bootstrap Automático (Guia de Uso)
+=========================================
+
+Objetivo: automatizar a construção do toolchain e do sistema base
+com um único comando: `alps bootstrap`.
+
+------------------------------------------------------------
+1. Preparação do ambiente
+- Verificar se o host possui ferramentas básicas: gcc, make, tar, wget.
+- Criar diretórios de trabalho:
+  - $ALPS_BUILD  (build temporário)
+  - $ALPS_CACHE  (sources)
+  - $ALPS_TOOLCHAIN  (toolchain temporário)
+  - $ALPS_LOGS  (logs de compilação)
+
+------------------------------------------------------------
+2. Toolchain Init (fase 1)
+- Baixar e compilar binutils e gcc (cross).
+- Instalar no $ALPS_TOOLCHAIN.
+- Exportar PATH para usar o toolchain novo.
+
+------------------------------------------------------------
+3. Toolchain Base
+- Compilar glibc/musl, libstdc++, headers do kernel.
+- Atualizar PATH para usar apenas ferramentas do $ALPS_TOOLCHAIN/bin.
+
+------------------------------------------------------------
+4. Toolchain Final (fase 2)
+- Recompilar gcc e binutils agora linkados contra a libc final.
+- Reinstalar no $ALPS_TOOLCHAIN.
+- Validar independência do host (ldd não deve apontar libs externas).
+
+------------------------------------------------------------
+5. Base System
+- Compilar pacotes essenciais: coreutils, bash, grep, sed, make, tar, gzip, xz.
+- Instalar usando o Alps normalmente.
+
+------------------------------------------------------------
+6. Registro e Logs
+- Cada etapa gera um log em $ALPS_LOGS/<pkg>.log.
+- Registrar no banco de dados interno do Alps os pacotes bootstrapados.
+
+------------------------------------------------------------
+7. Finalização
+- Gerar manifesto de todos os pacotes base.
+- Criar arquivo bootstrap.done para marcar o bootstrap completo.
+- Exibir mensagem:
+  '✅ Bootstrap concluído! Agora você pode usar o Alps normalmente.'
+
+------------------------------------------------------------
+Como usar o esqueleto do script `alps bootstrap`
+------------------------------------------------------------
+1. Salve o script fornecido em um arquivo, por exemplo:
+   cp bootstrap.sh /usr/bin/alps
+   chmod +x /usr/bin/alps
+
+2. Testar apenas a verificação do host:
+   alps bootstrap check
+
+3. Executar apenas a fase 1 do toolchain:
+   alps bootstrap stage1
+
+4. Executar apenas a fase 2 do toolchain:
+   alps bootstrap stage2
+
+5. Construir apenas o sistema base:
+   alps bootstrap base
+
+6. Executar todas as fases do bootstrap de uma vez:
+   alps bootstrap all
+   ou simplesmente:
+   alps bootstrap
+
+Observações:
+- As funções `bootstrap_stage1_toolchain`, `bootstrap_stage2_toolchain` e `bootstrap_base_system`
+  atualmente são placeholders e devem ser substituídas por chamadas reais para construir os pacotes
+  usando `alps build <pacote>` ou scripts equivalentes.
+- Durante cada etapa, os logs são salvos em $ALPS_LOGS/<pacote>.log.
+- Após a execução bem-sucedida, um arquivo $ALPS_LOGS/bootstrap.done será criado.
+- Futuras melhorias podem incluir retomar de falhas, paralelização, escolha de libc e cross-bootstrap.
